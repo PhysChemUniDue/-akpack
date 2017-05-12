@@ -4,6 +4,8 @@ function DataSet = processSR430( fileNames )
 % D = PROCESSSR430(FILENAMES) import FILENAMES (can be a single string or a
 % cell array of strings) and returns a dataset structure D.
 
+% Set amplification level for flux
+ampLevel = 1e15;
 
 % Check if filesnames are stored in a cell array. If thats not the case
 % (only one file selected) make a cell array out of it
@@ -12,36 +14,35 @@ if ~iscell( fileNames )
     fileNames = fileNamesCell;
 end
 
+DataSet = struct();
 for i=1:numel( fileNames )
     
     % Import numeric data
     numericData = dlmread( fileNames{i}, '\t', 12, 0 );
     
     % Put in data set
-    % Change the time data from nanoseconds to milliseconds
-    DataSet(i).time = numericData(:,1)*1e6;
+    % Change the time data from nanoseconds to seconds
+    DataSet(i).time = numericData(:,1)*1e-9;
     DataSet(i).counts = numericData(:,2:end);
-    
-    % Import date
-    formatSpec = '%*s%{dd-MMM-yyyy HH:mm:ss}D%[^\n\r]';
+    % Remove Background and Normalize Counts
+    DataSet(i).normCounts = (DataSet(i).counts - mean(DataSet(i).counts(1:10))) ...
+        ./ max(DataSet(i).counts);
+    % Calculate flux and amplify it. Without amplification there are
+    % problems with fitting the spectrum because of very low amplitudes
+    DataSet(i).flux = DataSet(i).normCounts ./ DataSet(i).time * ampLevel;
     
     fileID = fopen( fileNames{i}, 'r' );
     
-    % This scans the file two times in order to read the datetime properly.
-    % No idea why
-    dataArray = textscan(fileID, formatSpec, 2, ...
-        'Delimiter', '\t', ...
-        'ReturnOnError', false, ...
-        'DateLocale','de_DE');
-    
-    % Store datetime
-    DataSet(i).Date = dataArray{1}(2);
+    dataArray = textscan(fileID, '%s', 10);
+    % Store date as datetime
+    DataSet(i).Date = datetime([dataArray{1}{9}, ' ', dataArray{1}{10}]);
     
     % Read other options
     formatSpec = '%s %f';
-    dataArray = textscan( fileID, formatSpec, 9, ...
+    dataArray = textscan( fileID, formatSpec, 8, ...
         'Delimiter', '\t', ...
-        'ReturnOnError', false );
+        'ReturnOnError', false, ...
+        'HeaderLines', 2);
     
     % Get names and values out of there
     OptionNames = dataArray{1};
@@ -66,8 +67,8 @@ for i=1:numel( fileNames )
     DataSet(i).Temperature = str2double(DataSet(i).fileName(k:k+2));
     
     % Search for repetition rate indication in the file name
-    k = regexp(DataSet(i).fileName,'\dHz');
-    DataSet(i).RepRate = str2double(DataSet(i).fileName(k));
+    [k,j] = regexp(DataSet(i).fileName,'\dHz|\d\dHz');
+    DataSet(i).RepRate = str2double(DataSet(i).fileName(k:j-2));
     
     % Search for attenuator levels indication in the file name
     [k,j] = regexp(DataSet(i).fileName, '(atn\d\d\d|_\d\d\d_)');
@@ -78,6 +79,15 @@ for i=1:numel( fileNames )
     % Search for wavelength indication in the file name
     k = regexp(DataSet(i).fileName,'\d\d\dnm');
     DataSet(i).Wavelength = str2double(DataSet(i).fileName(k:k+2));
+    
+    % Search for distance indication in the file name
+    [k,j] = regexp(DataSet(i).fileName,'\d\d\dmm_|\d\d\d.\d\dmm_');
+    DataSet(i).externalDistance = ...
+        str2double(DataSet(i).fileName(k:j-3));
+    
+    % Search for background pressure indication in the file name
+    [k,j] = regexp(DataSet(i).fileName,'\d.\de-\dmbar|\d.\d\de-\dmbar|\de-\d\dmbar|\de-\dmbar|\d\de-\dmbar');
+    DataSet(i).backgroundPressure = str2double(DataSet(i).fileName(k:j-4));
     
     % Close file
     fclose( fileID );
