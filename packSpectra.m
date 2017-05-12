@@ -5,23 +5,27 @@ import akpack.itximport
 import akpack.sfgprocess
 
 pathName = [pwd, '/*.itx'];
-fileStruct = dir( pathName );
+dirInfo = dir( pathName );
 
-fprintf('Packing %g spectra...\n', numel(fileStruct))
+fprintf('Packing %g spectra...\n', numel(dirInfo))
 
-for i=1:numel(fileStruct)
+DataSet = struct();
+
+for i=1:numel(dirInfo)
     
-    DataSet(i).name = fileStruct(i).name;
+    [~,DataSet(i).name,~] = fileparts(dirInfo(i).name);
+    DataSet(i).date = dirInfo(i).date;
     
     % Import itx file
-    fileName = [pwd, '/', fileStruct(i).name];
+    fileName = [pwd, '/', dirInfo(i).name];
     itximport( fileName );
     
-    [signal,wavenumber,wavelength] = sfgprocess( WLOPG,SigOsc1 );
+    S = sfgprocess(WLOPG, SigOsc1);
+    fields = fieldnames(S);
     
-    DataSet(i).signal = signal*10e10;
-    DataSet(i).wavenumber = wavenumber;
-    DataSet(i).wavelength = wavelength;
+    for f=1:numel(fields)
+        DataSet(i).(fields{f}) = S.(fields{f});
+    end
     
 end
 

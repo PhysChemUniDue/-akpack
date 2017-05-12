@@ -56,7 +56,7 @@ end
 fprintf( 'Processing %g Files...\t', numel(dirInfo) )
 
 % Bin reduction: reduce bins to my_num_bins
-my_num_bins = 128;
+my_num_bins = 1024;
 
 % Maximal deviation of counts (ABW*standard deviation) from mean count
 % value
@@ -77,20 +77,23 @@ for q=1:numel(dirInfo)
         D(q).delay = nan;
     end
     
-    % Set new time data array to account for reduced amount of bins
-    timeData = linspace(timeData(end)/my_num_bins, timeData(end), my_num_bins);
-    % To reduce bins we have to swap the first and second dimension first
-    data = permute(data, [2, 1, 3]);
-    % Preallocate a reshaped data array
-    data_reshaped = zeros(size(data, 1), my_num_bins, 3);
-    % Reduce number of bins shot for shot
-    for i=1:size(data_reshaped, 1)
-        data_reshaped(i,:,:) = sum(reshape(data(i,:,:), (size(data, 2)/my_num_bins), my_num_bins, 3));
+    % Reshape if my_num_bins is smaller than the original one
+    if my_num_bins < numel(timeData)
+        % Set new time data array to account for reduced amount of bins
+        timeData = linspace(timeData(end)/my_num_bins, timeData(end), my_num_bins);
+        % To reduce bins we have to swap the first and second dimension first
+        data = permute(data, [2, 1, 3]);
+        % Preallocate a reshaped data array
+        data_reshaped = zeros(size(data, 1), my_num_bins, 3);
+        % Reduce number of bins shot for shot
+        for i=1:size(data_reshaped, 1)
+            data_reshaped(i,:,:) = sum(reshape(data(i,:,:), (size(data, 2)/my_num_bins), my_num_bins, 3));
+        end
+        % Swap the dimensions back
+        data_reshaped = permute(data_reshaped, [2, 1, 3]);
+        % Overwrite original data
+        data = data_reshaped;
     end
-    % Swap the dimensions back
-    data_reshaped = permute(data_reshaped, [2, 1, 3]);
-    % Overwrite original data
-    data = data_reshaped;
     
     if exist('d', 'var')
         % Set the number of the measurement if there is any information
@@ -109,7 +112,7 @@ for q=1:numel(dirInfo)
     counts(:,highDev,:) = [];
     
     for i=1:3
-        dat(i).name = [names{i},' - ', num2str(D(q).delay),' ns'];
+        dat(i).name = [names{i},' - ', num2str(D(q).delay * 1e9),' ns'];
         dat(i).timeData = timeData*1e-3;
         dat(i).counts = counts(:,:,i);
         dat(i).sumCounts = sumCounts(1,:,i);

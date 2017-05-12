@@ -18,6 +18,11 @@ function ipponVis(varargin)
 %                           the counts of the non-pumped spectrum.
 %   'density_sum'       -   Plot the summation of of the density spectra
 %   'comparison_sum'    -   Plot summation of tof comparisons
+%   'density2'          -   Plot density spectra in 2 subplots
+%   'cumsum_diff'       -   Cumulated sum of the density_comparison
+%                           difference
+%   'cumsum_diff2'      -   Cumulated sum of the density_comparison
+%                           difference all in the same figure
 
 %% Check input arguments
 
@@ -127,7 +132,7 @@ elseif strcmp(type,'density')
         end
         xlabel( 'Time [$\mu$s]')
         ylabel( 'Counts' )
-        title( sprintf('Density Spectra - Delay: %g ns', D(i).delay) )
+        title( sprintf('Density Spectra - Delay: %4.1f ns', D(i).delay * 1e9) )
         legend( 'show' )
         
         for j=2:3
@@ -136,7 +141,8 @@ elseif strcmp(type,'density')
                 'DisplayName', names{j} )
             xlabel( 'Time [$\mu$s]')
             ylabel( 'Counts' )
-            title( sprintf('Density Spectrum - %s - Delay: %g ns', names{j}, D(i).delay ) )
+            title( sprintf('Density Spectrum - %s - Delay: %4.1f ns', ...
+                names{j}, D(i).delay * 1e9 ) )
             legend('show')
         end
     end
@@ -152,7 +158,9 @@ elseif strcmp(type,'density_comparison')
             'DisplayName', 'Smoothed Data')
         xlabel( 'Time [$\mu$s]')
         ylabel( 'Counts' )
-        title( sprintf( 'Density Spectra Comparison (IR-UV) - Delay: %g ns', D(i).delay ) )
+        title( sprintf( ...
+            'Density Spectra Comparison (IR-UV) - Delay: %4.1f ns', ...
+            D(i).delay * 1e9 ) )
         legend('show')
     end
     
@@ -205,6 +213,53 @@ elseif strcmp(type,'comparison_sum')
     xlabel( 'Time [$\mu$s]')
     ylabel( 'Counts' )
     title( sprintf( 'Density Spectra Comparison (IR-UV) - SUM' ) )
+    legend('show')
+    
+elseif strcmp(type,'density2')
+    
+    for i = 1:N
+        
+        figure()
+        
+        for j = 2:3
+            subplot(2,1,j-1)
+            stairs(D(i).timeData, D(i).data(j).tof)
+            ylabel('Signal (arb. units)')
+            title(D(i).data(j).name)
+        end
+        
+        xlabel('Time of Flight [$\mu$s]')
+        
+    end
+    
+elseif strcmp(type,'cumsum_diff')
+    
+    for i=N
+        figure()
+        hold on
+        stairs( D(i).timeData, cumsum(D(i).data(3).tof-D(i).data(2).tof), ...
+            'DisplayName', 'Data')
+        xlabel( 'Time [$\mu$s]')
+        ylabel( 'Cumulated Counts' )
+        title( sprintf( ...
+            'Density Spectra Comparison (IR-UV) - Delay: %4.1f ns', ...
+            D(i).delay * 1e9 ) )
+        legend('show')
+    end
+    
+elseif strcmp(type,'cumsum_diff2')
+    
+    figure()
+    hold on
+    
+    for i=N
+        stairs( D(i).timeData, cumsum(D(i).data(3).tof-D(i).data(2).tof), ...
+            'DisplayName', sprintf('%4.1f ns', D(i).delay * 1e9))
+        xlabel( 'Time [$\mu$s]')
+        ylabel( 'Cumulated Counts' )
+        title('Density Spectra Comparison (IR-UV)')
+    end
+    
     legend('show')
     
 else
