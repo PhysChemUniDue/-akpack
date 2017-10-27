@@ -217,7 +217,7 @@ elseif strcmp(type,'comparison_sum')
     
 elseif strcmp(type,'density2')
     
-    for i = 1:N
+    for i = N
         
         figure()
         

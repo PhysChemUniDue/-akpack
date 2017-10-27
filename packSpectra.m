@@ -20,7 +20,7 @@ for i=1:numel(dirInfo)
     fileName = [pwd, '/', dirInfo(i).name];
     itximport( fileName );
     
-    S = sfgprocess(WLOPG, SigOsc1);
+    S = sfgprocess(WLOPG, SigOsc1, SigDet1);
     fields = fieldnames(S);
     
     for f=1:numel(fields)

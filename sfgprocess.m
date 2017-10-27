@@ -67,7 +67,7 @@ for j=1:length(wlDataPr)
     % Get range of signal data
     signalDataRangeL = ((j-1)*shotsPerWL) + 1;
     signalDataRangeU = signalDataRangeL + shotsPerWL - 1;
-    dataRange = signalData(signalDataRangeL:signalDataRangeU);
+    dataRange = signalDataRangeL:signalDataRangeU;
     % Get average of signalData
     sigDataPr(j) = mean(signalData(dataRange));
     error(j) = std(signalData(dataRange));
